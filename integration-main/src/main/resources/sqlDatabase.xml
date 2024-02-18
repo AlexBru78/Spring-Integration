@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/integration
+       http://www.springframework.org/schema/integration/spring-integration.xsd
+       http://www.springframework.org/schema/integration/jdbc
+       http://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd">
+
+    <!-- Define the input channel -->
+    <int:channel id="channelEntree"/>
+
+    <!-- Define the response channel -->
+    <int:channel id="responseChannel"/>
+
+    <!-- Define log database channel -->
+    <int:channel id="logDatabaseChannel"/>
+
+    <!-- Define the message handler -->
+    <int:service-activator id="messageHandler"
+                           input-channel="channelEntree"
+                           output-channel="responseChannel"
+                           ref="messageProcessor"/>
+
+    <!-- Define the bean for the message processor -->
+    <bean id="messageProcessor" class="test.MessageProcessor"/>
+
+    <!-- Define the gateway -->
+    <int:gateway id="gateway"
+                 service-interface="test.Gateway"
+                 default-request-channel="channelEntree"
+                 default-reply-channel="responseChannel"/>
+
+    <!-- Add query to the database -->
+    <int-jdbc:outbound-channel-adapter id="databaseAdapter"
+                                       query="INSERT INTO message (message) VALUES (:payload)"
+                                       data-source="dataSource"
+                                       channel="logDatabaseChannel"/>
+
+    <!-- Define the logging channel adapter for database insertion -->
+    <int:logging-channel-adapter id="loggerDatabase"
+                                 level="INFO"
+                                 channel="logDatabaseChannel"/>
+
+    <!-- Define the data source -->
+    <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+        <property name="driverClassName" value="org.h2.Driver"/>
+        <property name="jdbcUrl" value="jdbc:h2:mem:testdb"/>
+        <property name="username" value="sa"/>
+        <property name="password" value=""/>
+        <!--Schema initialization-->
+        <property name="schema">
+            <value>
+                CREATE TABLE message (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                message VARCHAR(255)
+                );
+            </value>
+        </property>
+    </bean>
+
+</beans>

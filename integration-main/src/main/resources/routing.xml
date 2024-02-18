@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-file="http://www.springframework.org/schema/integration/file"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/integration
+           http://www.springframework.org/schema/integration/spring-integration-5.1.xsd
+           http://www.springframework.org/schema/integration/file
+           http://www.springframework.org/schema/integration/file/spring-integration-file-5.1.xsd">
+
+    <int:channel id="channelEntree"></int:channel>
+    <int:channel id="jsonToObjectChannel"></int:channel>
+    <int:channel id="stringChannel"></int:channel>
+    <int:channel id="integerChannel"></int:channel>
+    <int:channel id="outChannel1"></int:channel>
+    <int:channel id="outChannel2"></int:channel>
+    <int:channel id="finalOutput"></int:channel>
+
+    <int-file:inbound-channel-adapter
+            channel="channelEntree"
+            directory="dataIn"
+            filename-pattern="account.json">
+        <int:poller id="poller" fixed-delay="1000"/>
+    </int-file:inbound-channel-adapter>
+
+    <!-- json to object transformer -->
+    <int:json-to-object-transformer type="test.Account" input-channel="channelEntree" output-channel="jsonToObjectChannel"/>
+
+    <!-- router -->
+    <int:recipient-list-router id="customRouter" input-channel="jsonToObjectChannel">
+    <int:recipient channel="outChannel1" selector-expression="payload.getName() == 'Tintin'"/>
+    <int:recipient channel="outChannel2" selector-expression="payload.getAmount() == 50"/>
+</int:recipient-list-router>
+    <int:service-activator id="serviceActivatorString" input-channel="outChannel1" output-channel="finalOutput"
+                           method="printString">
+        <bean class="test.Account"/>
+    </int:service-activator>
+    <int:service-activator id="serviceActivatorInteger" input-channel="outChannel2" output-channel="finalOutput"
+                           method="printInteger">
+        <bean class="test.Account"/>
+    </int:service-activator>
+
+    <!-- outbound file adapter -->
+    <int-file:outbound-channel-adapter channel="finalOutput" id="fileOut" directory="dataOut"/>
+
+
+</beans>

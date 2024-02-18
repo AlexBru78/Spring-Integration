@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-http="http://www.springframework.org/schema/integration/http"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/integration
+       http://www.springframework.org/schema/integration/spring-integration.xsd
+       http://www.springframework.org/schema/integration/http
+       http://www.springframework.org/schema/integration/http/spring-integration-http.xsd">
+
+    <!-- Define the input channel -->
+    <int:channel id="channelEntree"/>
+
+    <!-- Define the response channel -->
+    <int:channel id="responseChannel"/>
+
+    <!-- Define the gateway -->
+    <int:gateway id="gateway"
+                 service-interface="test.Gateway"
+                 default-request-channel="channelEntree"
+                 default-reply-channel="responseChannel"/>
+
+    <!-- Define the web service call -->
+    <int-http:outbound-gateway id="webServiceGateway"
+                               request-channel="channelEntree"
+                               url="http://localhost:8080/api/savedMessage"
+                               http-method="POST"
+                               expected-response-type="java.lang.String"
+                               charset="UTF-8"/>
+
+    <!-- Define the logger -->
+    <int:logging-channel-adapter id="logger"
+                                 level="INFO"
+                                 expression="'Message received: ' + payload"/>
+</beans>
